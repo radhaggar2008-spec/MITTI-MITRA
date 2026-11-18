@@ -1,0 +1,6 @@
+{
+  "name": "MittiMitra - SoilGuard",
+  "description": "Soil Pollution Awareness & Action platform for India — report soil contamination, check NPK/pH soil health, assess safe crops, and complete daily eco-actions.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": []
+}
