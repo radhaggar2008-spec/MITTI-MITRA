@@ -1,4 +1,4 @@
-export type SectionId = 'home' | 'report' | 'health' | 'crops' | 'eco' | 'learn';
+export type SectionId = 'home' | 'report' | 'health' | 'crops' | 'responses' | 'eco' | 'learn';
 
 export type PollutionType =
   | 'Farming'
@@ -101,4 +101,56 @@ export interface DailySoilTip {
   focusArea: string;
   emoji: string;
 }
+
+export type RespondentRole = 'Student' | 'Teacher' | 'Other';
+
+export type SoilPledge =
+  | 'Compost Kitchen Waste'
+  | 'Carry Cloth Bag'
+  | 'Plant Native Sapling'
+  | 'Stop Waste Burning'
+  | 'Test & Share Soil Health';
+
+export type ResponseStatus = 'pending' | 'reviewed';
+
+export interface CommunityResponse {
+  id: string;
+  authorUid: string;
+  name: string;
+  role: RespondentRole;
+  roleDetail?: string;
+  organization?: string;
+  city: string;
+  pledge: SoilPledge;
+  soilAwarenessRating: number;
+  message: string;
+  advice?: string;
+  problemsFaced?: string;
+  whatCanBeDone?: string;
+  problemImage?: string;
+  ecoActionImage?: string;
+  status: ResponseStatus;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+}
+
+export interface ResponseSummary {
+  totalCount: number;
+  studentCount: number;
+  teacherCount: number;
+  otherCount: number;
+  lastResponseId: string;
+  updatedAt?: unknown;
+}
+
+export interface EcoActionPhoto {
+  id: string;
+  taskId: string;
+  taskTitle: string;
+  caption: string;
+  photoDataUrl: string;
+  uploadedAt: string;
+}
+
+
 

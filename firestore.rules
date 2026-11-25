@@ -1,0 +1,268 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Core Primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerified() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isAdmin() {
+      return isVerified() && (
+        request.auth.token.email == 'radhaggar2008@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    // Validation Blueprints
+    function isValidResponse(data) {
+      return data.keys().hasAll([
+        'authorUid',
+        'name',
+        'role',
+        'city',
+        'pledge',
+        'soilAwarenessRating',
+        'message',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'authorUid',
+        'name',
+        'role',
+        'roleDetail',
+        'organization',
+        'city',
+        'pledge',
+        'soilAwarenessRating',
+        'message',
+        'advice',
+        'problemsFaced',
+        'whatCanBeDone',
+        'problemImage',
+        'ecoActionImage',
+        'status',
+        'createdAt',
+        'updatedAt'
+      ])
+      && data.authorUid is string
+      && data.authorUid.size() >= 1
+      && data.authorUid.size() <= 128
+      && data.authorUid.matches('^[a-zA-Z0-9_\\-]+$')
+      && data.name is string
+      && data.name.size() >= 2
+      && data.name.size() <= 80
+      && data.role in ['Student', 'Teacher', 'Other']
+      && (!('roleDetail' in data) || (data.roleDetail is string && data.roleDetail.size() <= 40))
+      && (!('organization' in data) || (data.organization is string && data.organization.size() <= 100))
+      && data.city is string
+      && data.city.size() >= 2
+      && data.city.size() <= 60
+      && data.pledge in [
+        'Compost Kitchen Waste',
+        'Carry Cloth Bag',
+        'Plant Native Sapling',
+        'Stop Waste Burning',
+        'Test & Share Soil Health'
+      ]
+      && data.soilAwarenessRating is int
+      && data.soilAwarenessRating >= 1
+      && data.soilAwarenessRating <= 5
+      && data.message is string
+      && data.message.size() >= 5
+      && data.message.size() <= 500
+      && (!('advice' in data) || (data.advice is string && data.advice.size() <= 500))
+      && (!('problemsFaced' in data) || (data.problemsFaced is string && data.problemsFaced.size() <= 500))
+      && (!('whatCanBeDone' in data) || (data.whatCanBeDone is string && data.whatCanBeDone.size() <= 500))
+      && (!('problemImage' in data) || (
+        data.problemImage is string
+        && data.problemImage.size() <= 160000
+        && data.problemImage.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+      ))
+      && (!('ecoActionImage' in data) || (
+        data.ecoActionImage is string
+        && data.ecoActionImage.size() <= 160000
+        && data.ecoActionImage.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+      ))
+      && data.status in ['pending', 'reviewed']
+      && data.createdAt is timestamp
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidSummary(data) {
+      return data.keys().hasAll([
+        'totalCount',
+        'studentCount',
+        'teacherCount',
+        'otherCount',
+        'lastResponseId',
+        'updatedAt'
+      ])
+      && data.keys().hasOnly([
+        'totalCount',
+        'studentCount',
+        'teacherCount',
+        'otherCount',
+        'lastResponseId',
+        'updatedAt'
+      ])
+      && data.totalCount is int
+      && data.totalCount >= 0
+      && data.studentCount is int
+      && data.studentCount >= 0
+      && data.teacherCount is int
+      && data.teacherCount >= 0
+      && data.otherCount is int
+      && data.otherCount >= 0
+      && data.lastResponseId is string
+      && data.lastResponseId.size() >= 1
+      && data.lastResponseId.size() <= 128
+      && data.lastResponseId.matches('^[a-zA-Z0-9_\\-]+$')
+      && data.updatedAt is timestamp;
+    }
+
+    function isValidAdmin(data) {
+      return data.keys().hasAll(['email', 'role', 'createdAt'])
+        && data.keys().hasOnly(['email', 'role', 'createdAt'])
+        && data.email is string
+        && data.email.size() >= 5
+        && data.email.size() <= 120
+        && data.role == 'admin'
+        && data.createdAt is timestamp;
+    }
+
+    // Collection: /responses/{responseId}
+    match /responses/{responseId} {
+      allow get: if isVerified() && isValidId(responseId) && (
+        existing().authorUid == request.auth.uid || isAdmin()
+      );
+
+      allow list: if isVerified() && (
+        resource.data.authorUid == request.auth.uid || isAdmin()
+      );
+
+      allow create: if isVerified()
+        && isValidId(responseId)
+        && isValidResponse(incoming())
+        && incoming().authorUid == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isVerified()
+        && isValidId(responseId)
+        && isValidResponse(incoming())
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Admin review / status moderation
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']))
+          ||
+          // Action 2: Author edits own pending response before review
+          (
+            existing().authorUid == request.auth.uid
+            && existing().status != 'reviewed'
+            && incoming().status == existing().status
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'name',
+              'role',
+              'roleDetail',
+              'organization',
+              'city',
+              'pledge',
+              'soilAwarenessRating',
+              'message',
+              'advice',
+              'problemsFaced',
+              'whatCanBeDone',
+              'problemImage',
+              'ecoActionImage',
+              'updatedAt'
+            ])
+          )
+        );
+
+      allow delete: if isVerified() && isValidId(responseId) && (
+        existing().authorUid == request.auth.uid || isAdmin()
+      );
+    }
+
+    // Document: /stats/summary (zero-PII public participation tally)
+    match /stats/summary {
+      allow get: if true;
+      allow list: if false;
+
+      allow create: if isVerified()
+        && isValidSummary(incoming())
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            incoming().totalCount == 1
+            && (incoming().studentCount + incoming().teacherCount + incoming().otherCount) == 1
+            && existsAfter(/databases/$(database)/documents/responses/$(incoming().lastResponseId))
+          )
+        );
+
+      allow update: if isVerified()
+        && isValidSummary(incoming())
+        && incoming().updatedAt == request.time
+        && (
+          isAdmin()
+          || (
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'totalCount',
+              'studentCount',
+              'teacherCount',
+              'otherCount',
+              'lastResponseId',
+              'updatedAt'
+            ])
+            && incoming().totalCount == existing().totalCount + 1
+            && (incoming().studentCount + incoming().teacherCount + incoming().otherCount) == incoming().totalCount
+            && incoming().studentCount >= existing().studentCount
+            && incoming().teacherCount >= existing().teacherCount
+            && incoming().otherCount >= existing().otherCount
+            && existsAfter(/databases/$(database)/documents/responses/$(incoming().lastResponseId))
+          )
+        );
+
+      allow delete: if false;
+    }
+
+    // Collection: /admins/{adminUid}
+    match /admins/{adminUid} {
+      allow get: if isVerified() && isValidId(adminUid) && (
+        request.auth.uid == adminUid || isAdmin()
+      );
+      allow list: if isAdmin();
+      allow create: if isAdmin() && isValidId(adminUid) && isValidAdmin(incoming()) && incoming().createdAt == request.time;
+      allow update: if isAdmin() && isValidId(adminUid) && isValidAdmin(incoming()) && incoming().createdAt == existing().createdAt;
+      allow delete: if isAdmin() && isValidId(adminUid);
+    }
+  }
+}

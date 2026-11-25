@@ -139,6 +139,59 @@ export const HomeHero: React.FC<HomeHeroProps> = ({ onNavigate, totalReports, ec
 
         {/* Daily Soil Tip Component */}
         <DailySoilTip />
+
+        {/* Quick Navigation Strip to Dedicated Tabs */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              id: 'responses' as SectionId,
+              emoji: '📝',
+              title: 'Response Form & Advice Box',
+              desc: 'Students, teachers & citizens share soil feedback and advice.',
+            },
+            {
+              id: 'crops' as SectionId,
+              emoji: '🌾',
+              title: 'Safe Crop Checker',
+              desc: 'Check lead risk across Delhi, Faridabad & Haryana crops.',
+            },
+            {
+              id: 'eco' as SectionId,
+              emoji: '🌿',
+              title: 'Eco Actions & Photo Proof',
+              desc: 'Complete daily tasks, upload action photos & climb leaderboard.',
+            },
+            {
+              id: 'learn' as SectionId,
+              emoji: '📚',
+              title: 'Learn Soil Science',
+              desc: 'Explore pollution sources, food chain & soil healing solutions.',
+            },
+          ].map((card) => (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => onNavigate(card.id)}
+              className="text-left rounded-2xl bg-[#FFFFFF] hover:bg-[#F5EFE2] border border-[#E2D9C8] p-5 transition-colors cursor-pointer flex flex-col justify-between"
+            >
+              <div>
+                <span className="text-2xl" aria-hidden="true">
+                  {card.emoji}
+                </span>
+                <h3 className="mt-2 font-display text-base font-bold text-[#2C1E18]">
+                  {card.title}
+                </h3>
+                <p className="mt-1 text-xs sm:text-sm text-[#5C473D] leading-relaxed">
+                  {card.desc}
+                </p>
+              </div>
+              <span className="mt-3 text-xs font-semibold text-[#1B5E20] inline-flex items-center gap-1">
+                <span>Open tab</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
     </section>
   );

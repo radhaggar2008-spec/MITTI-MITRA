@@ -1,5 +1,5 @@
 import React from 'react';
-import { Award, BookOpen, FlaskConical, Home, MapPin, Sprout } from 'lucide-react';
+import { Award, BookOpen, FlaskConical, Home, MapPin, Sprout, Users } from 'lucide-react';
 import { SectionId } from '../types';
 
 interface NavbarProps {
@@ -8,9 +8,9 @@ interface NavbarProps {
 }
 
 const DESKTOP_LINKS: { id: SectionId; label: string }[] = [
-  { id: 'home', label: 'Home' },
   { id: 'health', label: 'Soil Health' },
   { id: 'crops', label: 'Safe Crop' },
+  { id: 'responses', label: 'Response Form' },
   { id: 'eco', label: 'Eco Actions' },
   { id: 'learn', label: 'Learn' },
 ];
@@ -20,6 +20,7 @@ const MOBILE_TABS: { id: SectionId; label: string; Icon: React.ComponentType<{ c
   { id: 'report', label: 'Report', Icon: MapPin },
   { id: 'health', label: 'Soil', Icon: FlaskConical },
   { id: 'crops', label: 'Crops', Icon: Sprout },
+  { id: 'responses', label: 'Form', Icon: Users },
   { id: 'eco', label: 'Eco', Icon: Award },
   { id: 'learn', label: 'Learn', Icon: BookOpen },
 ];
@@ -83,7 +84,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeSection, onNavigate }) => 
         aria-label="Mobile Navigation"
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-14 bg-[#FAF7F0]/95 backdrop-blur-md border-t border-[#E2D9C8]"
       >
-        <div className="grid grid-cols-6 h-full">
+        <div className="grid grid-cols-7 h-full">
           {MOBILE_TABS.map(({ id, label, Icon }) => {
             const isActive = activeSection === id;
             return (

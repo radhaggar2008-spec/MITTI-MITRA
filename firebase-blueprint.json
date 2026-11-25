@@ -1,0 +1,204 @@
+{
+  "entities": {
+    "CommunityResponse": {
+      "title": "CommunityResponse",
+      "description": "A response submitted by a student, teacher, or community member sharing soil awareness pledges and observations.",
+      "type": "object",
+      "properties": {
+        "authorUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the respondent",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Respondent display name",
+          "minLength": 2,
+          "maxLength": 80
+        },
+        "role": {
+          "type": "string",
+          "description": "Respondent category",
+          "enum": ["Student", "Teacher", "Other"]
+        },
+        "roleDetail": {
+          "type": "string",
+          "description": "Optional specific role when Other is chosen (e.g., Farmer, Parent, Volunteer)",
+          "maxLength": 40
+        },
+        "organization": {
+          "type": "string",
+          "description": "Optional school, college, or community organization",
+          "maxLength": 100
+        },
+        "city": {
+          "type": "string",
+          "description": "City or district in India",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "pledge": {
+          "type": "string",
+          "description": "Soil conservation pledge chosen by the respondent",
+          "enum": [
+            "Compost Kitchen Waste",
+            "Carry Cloth Bag",
+            "Plant Native Sapling",
+            "Stop Waste Burning",
+            "Test & Share Soil Health"
+          ]
+        },
+        "soilAwarenessRating": {
+          "type": "integer",
+          "description": "1 to 5 self-assessed awareness or local soil condition score"
+        },
+        "message": {
+          "type": "string",
+          "description": "Reflection, soil observation, or feedback",
+          "minLength": 5,
+          "maxLength": 500
+        },
+        "advice": {
+          "type": "string",
+          "description": "Soil conservation advice or suggestion shared in the advice box",
+          "maxLength": 500
+        },
+        "problemsFaced": {
+          "type": "string",
+          "description": "Local soil pollution or land degradation problems faced by the respondent",
+          "maxLength": 500
+        },
+        "whatCanBeDone": {
+          "type": "string",
+          "description": "Practical actions or solutions suggested to resolve the problem faced",
+          "maxLength": 500
+        },
+        "problemImage": {
+          "type": "string",
+          "description": "Compressed base64 JPEG/PNG/WebP thumbnail showing the problem faced or target area",
+          "maxLength": 160000,
+          "pattern": "^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$"
+        },
+        "ecoActionImage": {
+          "type": "string",
+          "description": "Compressed base64 JPEG/PNG/WebP thumbnail of the eco action taken",
+          "maxLength": 160000,
+          "pattern": "^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$"
+        },
+        "status": {
+          "type": "string",
+          "description": "Moderation/tracking status",
+          "enum": ["pending", "reviewed"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp"
+        }
+      },
+      "required": [
+        "authorUid",
+        "name",
+        "role",
+        "city",
+        "pledge",
+        "soilAwarenessRating",
+        "message",
+        "status",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "ResponseSummary": {
+      "title": "ResponseSummary",
+      "description": "Public aggregate counts of responses by respondent category (zero PII).",
+      "type": "object",
+      "properties": {
+        "totalCount": {
+          "type": "integer",
+          "description": "Total number of submitted responses"
+        },
+        "studentCount": {
+          "type": "integer",
+          "description": "Responses from students"
+        },
+        "teacherCount": {
+          "type": "integer",
+          "description": "Responses from teachers"
+        },
+        "otherCount": {
+          "type": "integer",
+          "description": "Responses from others (farmers, parents, community members)"
+        },
+        "lastResponseId": {
+          "type": "string",
+          "description": "Document ID of the response created atomically with this summary update",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of the summary update"
+        }
+      },
+      "required": [
+        "totalCount",
+        "studentCount",
+        "teacherCount",
+        "otherCount",
+        "lastResponseId",
+        "updatedAt"
+      ]
+    },
+    "AdminUser": {
+      "title": "AdminUser",
+      "description": "Authorized tracker coordinator or teacher admin record.",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "maxLength": 120
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["email", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/responses/{responseId}": {
+      "schema": {
+        "$ref": "#/entities/CommunityResponse"
+      },
+      "description": "Individual soil awareness responses from students, teachers, and others."
+    },
+    "/stats/summary": {
+      "schema": {
+        "$ref": "#/entities/ResponseSummary"
+      },
+      "description": "Aggregate role breakdown counts updated atomically with each new response."
+    },
+    "/admins/{adminUid}": {
+      "schema": {
+        "$ref": "#/entities/AdminUser"
+      },
+      "description": "Registry of additional teacher/coordinator admins granted full response tracking access."
+    }
+  }
+}
